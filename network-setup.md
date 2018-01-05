@@ -21,5 +21,30 @@ For the DNS server, I've just used [OpenDNS](https://www.opendns.com)
 ![Subnet setup](images/network3.png)
 
 
+# Router Setup
+
+Next, we need to create a router to our public network.
+
+Click the create router button on the top right, and enter a name for the router and connect it to your public network.
+
+![Router Setup](images/router1.png)
+
+This creates a router from your public network that doesn't go anywhere:
+
+![Endless router](images/router2.png)
+
+Hover over the X and then click add interface:
+
+![Add interface](images/router3.png)
+
+Choose your network that you created earlier and enter the IP address of the gateway that you entered above (192.168.0.1)
+
+![Add interface details](images/router4.png)
+
+Your network should be complete:
+
+![Complete network](images/router5.png)
+
+
 
 
