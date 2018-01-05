@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# Creates an .sh script to bootstrap a worker node
+# This is passed as user data
+
+set -e
+
+SCRIPT=$1
+WORKER_HOSTNAME=$2
+WORKER_ALT_HOSTNAME=$3
+
+if [ "x$SCRIPT" = "x" -o "x$WORKER_HOSTNAME" = "x" -o "x$WORKER_ALT_HOSTNAME" = "x" ]; then
+    echo "Usage: sra-create-worker-bootstrap [script_file_name] [worker_hostname]"
+    exit 1
+fi
+
+MASTER_HOSTNAME=`hostname -f`
+
+umask 0077
+
+cd /tmp
+
+# create keys for the worker and pre-auth them in Salt
+salt-key --gen-keys=$WORKER_HOSTNAME
+cp $WORKER_HOSTNAME.pub /etc/salt/pki/master/minions/$WORKER_HOSTNAME
+#cp $WORKER_HOSTNAME.pub /etc/salt/pki/master/minions/$WORKER_ALT_HOSTNAME
+chmod 644 /etc/salt/pki/master/minions/$WORKER_HOSTNAME
+
+cat >$SCRIPT <<EOF
+#!/bin/bash
+
+# fix the hostname - Jetstream is very inconsistent here
+hostname "$WORKER_HOSTNAME"
+echo "$WORKER_HOSTNAME" >/etc/hostname
+cat "$WORKER_HOSTNAME" >/etc/salt/minion_id
+
+cat >/etc/salt/grains <<EEOOFF
+roles:
+  - worker_node
+EEOOFF
+echo "master: $MASTER_HOSTNAME" >/etc/salt/minion.d/50-master.conf
+
+cat >/etc/salt/pki/minion/minion.pub <<EEOOFF
+EOF
+cat $WORKER_HOSTNAME.pub >>$SCRIPT
+cat >>$SCRIPT <<EOF
+EEOOFF
+
+cat >/etc/salt/pki/minion/minion.pem <<EEOOFF
+EOF
+cat $WORKER_HOSTNAME.pem >>$SCRIPT
+cat >>$SCRIPT <<EOF
+EEOOFF
+
+chmod 600 /etc/salt/pki/minion/minion.pem
+
+# seems we can get stuck here if we try to access the network
+#systemctl stop salt-master || true
+#salt-call state.highstate || true
+#systemctl restart salt-minion || true
+
+EOF
+
+# cleanup
+rm -f $WORKER_HOSTNAME.pub $WORKER_HOSTNAME.pem
+
