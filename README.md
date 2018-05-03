@@ -5,11 +5,8 @@ on HTCondor, the OpenStack Shade library, and SaltStack.
 
 ## Prerequisites 
 
-In the [Jetstream web interface](https://jblb.jetstream-cloud.org/dashboard/auth/login/?next=/dashboard/) (API version), make sure you have a network
+In the Jetstream web interface (API version), make sure you have a network
 called "sra-net" with a router configured to access the public network.
-
-Setting up the network is described in [network-setup](network-setup.md)
-
 Under the network topology tab, you should see something like:
 
 ![Jetstream Network](images/jetstream-network.png)

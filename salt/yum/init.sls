@@ -43,6 +43,8 @@ libtool:
 
 pkgconfig:
     pkg.installed
-
-
+    
+docker-ce:
+    pkg.removed
+    
 

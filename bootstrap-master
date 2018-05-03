@@ -9,13 +9,23 @@ if [ "x$MY_HOSTNAME" = "x" ]; then
     exit 1
 fi
 
+MY_SHORT_HOSTNAME=`echo $MY_HOSTNAME | sed 's/\..*//'`
+
 rm -f /srv/salt
 ln -s /srv/jetstream-sra-cluster/salt /srv/salt
+
+# generate a new hosts file
+./salt/tools/generate-hosts-file $MY_HOSTNAME $MY_SHORT_HOSTNAME >salt/local-conf/hosts
+cp salt/local-conf/hosts /etc/hosts
 
 # install and configure salt
 yum install -y salt-master salt-minion
 mkdir -p /etc/salt/minion.d /etc/salt/master.d
 echo "$MY_HOSTNAME" >/etc/salt/minion_id
+cat >/etc/salt/grains <<EOF
+roles:
+  - master
+EOF
 echo "master: $MY_HOSTNAME" >/srv/jetstream-sra-cluster/salt/local-conf/salt-50-master.conf
 cp /srv/jetstream-sra-cluster/salt/salt/*.conf /etc/salt/minion.d/
 cp /srv/jetstream-sra-cluster/salt/local-conf/salt-50-master.conf /etc/salt/minion.d/
@@ -37,6 +47,8 @@ dd if=/dev/urandom bs=1 count=1024 >/srv/jetstream-sra-cluster/salt/local-conf/m
 
 # install slurm
 yum install -y munge-devel readline-devel pam-devel mariadb mariadb-server mariadb-devel
+systemctl start mariadb
+systemctl enable mariadb
 rm -f /root/rpmbuild/RPMS/x86_64/slurm*.rpm
 cd /tmp	
 rm -rf slurm*.bz2 slurm*.rpm
@@ -44,8 +56,8 @@ wget -nv https://download.schedmd.com/slurm/slurm-17.11.1.tar.bz2
 rpmbuild -ta slurm*.tar.bz2
 cd /root/rpmbuild/RPMS/x86_64/
 rm -f *openlava* *torque*
+yum -y erase slurm slurm-\* || true
 rpm -Uvh slurm*.rpm
-systemctl restart mariadb
 echo "grant all on slurm.* to slurm@localhost identified by 'srasecret';" | mysql
 
 salt-call state.highstate
@@ -53,6 +65,6 @@ salt-call state.highstate
 systemctl restart salt-minion
 
 # enable autoscaler
-echo " */5 * * * *  root  /srv/jetstream-sra-cluster/salt/tools/sra-autoscaler.py >/var/log/sra-autoscaler.log 2>&1" >/etc/cron.d/sra-autoscaler
+echo " */10 * * * *  root  /srv/jetstream-sra-cluster/salt/tools/sra-autoscaler.py >/var/log/sra-autoscaler.log 2>&1" >/etc/cron.d/sra-autoscaler
 
 
